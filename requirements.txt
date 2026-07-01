@@ -1,10 +1,5 @@
 langchain
-langchain-chroma
-langchain-openai
-langchain-tavily
-tavily-python
-chromadb
-python-dotenv
-pydantic
-tqdm
-langgraph==0.1.2
+langgraph==0.1.4
+langchain-openai==0.2.3
+python-dotenv==1.0.1
+pytest>=7,<8
