@@ -26,7 +26,7 @@ from typing import Literal, TypedDict
 
 from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
-from langgraph.graph import END, StateGraph
+from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
 
 load_dotenv()
@@ -225,7 +225,7 @@ def build_graph():
     graph.add_node("reflect", reflect_node)
     graph.add_node("rewrite", rewrite_node)
 
-    graph.set_entry_point("draft_review")
+    graph.add_edge(START, "draft_review")
     graph.add_edge("draft_review", "reflect")
     graph.add_conditional_edges(
         "reflect",
