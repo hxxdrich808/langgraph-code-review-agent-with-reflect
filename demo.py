@@ -1,13 +1,23 @@
 """
-CLI Demo for LangGraph Code Review Agent.
+Simple CLI demo for the LangGraph code review agent.
 """
 
 import argparse
+from textwrap import dedent
+
 from agent import run_code_review
 
 
+def sort_numbers(numbers):
+    """Sort a list of numbers in ascending order."""
+    # Using built-in sorted function for simplicity
+    return sorted(numbers)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="LangGraph Code Review Demo")
+    parser = argparse.ArgumentParser(
+        description="Demo: Run code review on a sample function."
+    )
     parser.add_argument(
         "--max-rounds",
         type=int,
@@ -16,24 +26,28 @@ def main():
     )
     args = parser.parse_args()
 
-    sample_function = """
-def sort_numbers(nums):
-    # Sort a list of numbers in ascending order
-    return sorted(nums)
-"""
+    # Sample code to review
+    sample_code = dedent("""
+    def sort_numbers(numbers):
+        \"\"\"Sort a list of numbers in ascending order.\"\"\"
+        # Using built-in sorted function for simplicity
+        return sorted(numbers)
+    """)
 
-    print("=== Running code review ===")
-    final_state = run_code_review(sample_function, max_rounds=args.max_rounds)
+    result = run_code_review(sample_code, max_rounds=args.max_rounds)
 
-    print("\n--- Final Draft Review ---")
-    print(final_state["draft_review"])
-
-    print("\n--- Criteria Scores ---")
-    for crit, score in final_state["criteria_scores"].items():
-        print(f"{crit}: {score}")
-
-    print("\n--- Verdict ---")
-    print(final_state["verdict"])
+    print("\n=== Draft Review ===")
+    print(result["draft_review"])
+    print("\n=== Scores ===")
+    for k, v in result["criteria_scores"].items():
+        print(f"{k}: {v}")
+    print(f"\nWeakest criterion: {result['weakest_criterion']}")
+    print(f"Verdict: {result['verdict']}")
+    if result["round"] > 0:
+        print("\n=== Rewritten Review ===")
+        print(result["draft_review"])
+    else:
+        print("\nNo rewrite performed.")
 
 
 if __name__ == "__main__":
