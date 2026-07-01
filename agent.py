@@ -1,22 +1,5 @@
 """
 LangGraph-агент: code review с рефлексией по 4 критериям.
-
-Граф:
-
-    START -> draft_review -> reflect --ok--> END
-                                 ^  |
-                                 |  needs_revision & round < max_rounds
-                                 |  v
-                              rewrite
-
-reflect маршрутизирует:
-  - verdict == "ok"                       -> END
-  - needs_revision & round < max_rounds   -> rewrite -> reflect (снова)
-  - needs_revision & round >= max_rounds  -> END (лимит раундов исчерпан)
-
-Важно: объект ревью здесь — КОД. Рефлексия (критик) оценивает не общее
-впечатление, а качество текста ревью по 4 конкретным критериям:
-pep8, type_hints, edge_cases, naming.
 """
 
 from __future__ import annotations
@@ -55,7 +38,7 @@ class CodeReviewState(TypedDict):
     draft_review: str
     criteria_scores: dict[str, int]  # {"pep8": 0-10, "type_hints": ..., ...}
     weakest_criterion: str
-    verdict: str  # "ok" | "needs_revision"
+    verdict: Literal["ok", "needs_revision"]
     round: int
     max_rounds: int
 
@@ -118,8 +101,8 @@ REFLECT_PROMPT = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "Ты — строгий критик code review. Тебе даны исходный код и текст ревью, "
-            "написанный другим ревьюером. Оцени КАЧЕСТВО ЭТОГО РЕВЬЮ (а не сам код) "
+            f"Ты — строгий критик code review. Тебе даны исходный код и текст ревью, "
+            f"написанный другим ревьюером. Оцени КАЧЕСТВО ЭТОГО РЕВЬЮ (а не сам код) "
             "по 4 критериям, шкала 0-10 для каждого:\n"
             "- pep8: насколько ревью замечает и разбирает вопросы стиля/PEP8;\n"
             "- type_hints: насколько ревью оценивает наличие и корректность типизации;\n"
@@ -172,7 +155,7 @@ REWRITE_PROMPT = ChatPromptTemplate.from_messages(
             "ревью и критерий, который критик оценил ниже всего: {weakest_criterion}.\n"
             "Перепиши весь текст ревью заново (3-6 пунктов, тот же формат), сохранив всё "
             "ценное из прежней версии, но СУЩЕСТВЕННО усиль раздел, относящийся к "
-            "критерию '{weakest_criterion}': добавь конкретику, ссылки на конкретные "
+            f"критерию '{weakest_criterion}': добавь конкретику, ссылки на конкретные "
             "строки/имена из кода и предметные рекомендации. Остальные пункты не сокращай.\n"
             "Пиши на русском.",
         ),
@@ -218,7 +201,7 @@ def route_after_reflect(state: CodeReviewState) -> str:
 # Сборка графа
 # ---------------------------------------------------------------------------
 
-def build_graph():
+def build_graph() -> StateGraph[CodeReviewState]:
     graph = StateGraph(CodeReviewState)
 
     graph.add_node("draft_review", draft_review_node)
@@ -235,3 +218,27 @@ def build_graph():
     graph.add_edge("rewrite", "reflect")
 
     return graph.compile()
+
+
+# ---------------------------------------------------------------------------
+# Публичный API
+# ---------------------------------------------------------------------------
+
+def run_code_review(code: str, max_rounds: int | None = None) -> dict:
+    """Run the code review graph and return final state."""
+    if max_rounds is None:
+        max_rounds = 2
+
+    initial_state: CodeReviewState = {
+        "code": code,
+        "draft_review": "",
+        "criteria_scores": {},
+        "weakest_criterion": "",
+        "verdict": "needs_revision",
+        "round": 0,
+        "max_rounds": max_rounds,
+    }
+
+    graph = build_graph()
+    final_state = graph.invoke(initial_state)
+    return final_state
