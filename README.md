@@ -1,7 +1,7 @@
 # LangGraph Code Review Agent with Reflection
 
 This project implements a code review agent using **LangGraph** and an LLM (OpenAI or Ollama).  
-It accepts a Python function, generates an initial review, scores it on four criteria, rewrites weak parts if needed, and repeats until the review passes or the maximum number of rounds is reached.
+It accepts a Python function, generates an initial review, scores it on four criteria, rewrites weak parts if needed, and repeats until the maximum number of rounds is reached.
 
 ## Features
 

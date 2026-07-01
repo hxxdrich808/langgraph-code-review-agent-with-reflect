@@ -1,7 +1,6 @@
 import argparse
 from graph import build_graph
 from state import CodeReviewState
-import os
 
 def main():
     parser = argparse.ArgumentParser(description="LangGraph Code Review Agent")

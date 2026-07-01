@@ -19,7 +19,7 @@ You are a senior software engineer reviewing the following Python function.
 Provide an initial review with 3 to 6 concise bullet points. Do not include any JSON or formatting, just plain text.
 """
     response = llm.invoke(prompt)
-    return {"draft_review": response.content.strip(), "round": 1}
+    return {"draft_review": response.content.strip()}
 
 def register(graph: StateGraph):
     graph.add_node("draft_review", draft_review)

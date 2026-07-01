@@ -26,7 +26,7 @@ Score this draft on four criteria (0-10, 10 being best):
 Return a JSON object with keys:
 - "criteria_scores": dict mapping criterion name to score
 - "weakest_criterion": the criterion with lowest score
-- "verdict": "ok" if all scores >=8, otherwise "needs_revision"
+- "verdict": "ok" if all scores >=7, otherwise "needs_revision"
 
 Example output:
 {{
