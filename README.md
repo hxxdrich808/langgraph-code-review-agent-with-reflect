@@ -47,7 +47,7 @@ class CodeReviewState(TypedDict):
 
 - Python 3.10+
 - `langgraph` — граф с циклом рефлексии
-- `langchain-openai` / `langchain-ollama` — LLM-провайдеры
+- `langchain-openai` — LLM-провайдер
 - `pydantic` — structured output критика
 - `rich` — форматированный CLI-вывод (подсветка кода, панели, таблица баллов)
 
@@ -56,13 +56,11 @@ class CodeReviewState(TypedDict):
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
-# затем впишите в .env свой OPENAI_API_KEY (или переключитесь на Ollama)
+# затем впишите в .env свой OPENAI_API_KEY
 ```
 
-Поддерживаются два провайдера LLM (переключаются через `LLM_PROVIDER` в `.env`):
-- **OpenAI** (`langchain-openai`) — по умолчанию, модель `gpt-4o-mini`.
-- **Ollama** (`langchain-ollama`) — локальные модели; для `reflect` нужна модель
-  с поддержкой tool-calling / structured output (например `llama3.1`, `qwen2.5`).
+Используется провайдер **OpenAI** (`langchain-openai`), модель по умолчанию —
+`gpt-4o-mini` (переопределяется через `OPENAI_MODEL` в `.env`).
 
 ## Запуск демо
 
@@ -124,8 +122,4 @@ code_review_agent/
 
 ## Ограничения
 
-- Для реального запуска нужен доступ к API выбранного провайдера (ключ OpenAI
-  либо локально запущенный Ollama).
-- При использовании Ollama качество и стабильность structured output зависят
-  от конкретной модели — не все модели одинаково надёжно возвращают строго
-  типизированный JSON через tool-calling.
+- Для реального запуска нужен доступ к OpenAI API (ключ `OPENAI_API_KEY`).
