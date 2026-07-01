@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
+from rich import print as rprint  # Rich output
 
 load_dotenv()
 
@@ -87,6 +88,7 @@ def draft_review_node(state: CodeReviewState) -> dict:
     llm = get_llm(temperature=0.3)
     chain = DRAFT_PROMPT | llm
     result = chain.invoke({"code": state["code"]})
+    rprint("[bold cyan]Draft Review:[/]\n" + result.content)
     return {
         "draft_review": result.content,
         "round": 0,
@@ -136,6 +138,12 @@ def reflect_node(state: CodeReviewState) -> dict:
         "naming": result.naming,
     }
 
+    rprint("[bold magenta]Reflection Scores:[/]")
+    for k, v in scores.items():
+        rprint(f"  {k}: {v}")
+    rprint(f"[bold magenta]Verdict:[/] {result.verdict}")
+    rprint(f"[bold magenta]Weakest Criterion:[/] {result.weakest_criterion}")
+
     return {
         "criteria_scores": scores,
         "weakest_criterion": result.weakest_criterion,
@@ -179,6 +187,7 @@ def rewrite_node(state: CodeReviewState) -> dict:
             "weakest_criterion": state["weakest_criterion"],
         }
     )
+    rprint("[bold cyan]Rewritten Review:[/]\n" + result.content)
     return {
         "draft_review": result.content,
         "round": state["round"] + 1,
