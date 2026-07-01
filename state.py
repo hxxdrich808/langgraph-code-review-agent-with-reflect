@@ -7,4 +7,4 @@ class CodeReviewState(TypedDict):
     weakest_criterion: str
     verdict: str  # "ok" or "needs_revision"
     round: int
-    max_rounds: int = 2
+    max_rounds: int
