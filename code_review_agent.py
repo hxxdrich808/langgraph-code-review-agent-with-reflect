@@ -5,7 +5,7 @@ from pathlib import Path
 
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
@@ -29,7 +29,7 @@ llm = ChatOpenAI(temperature=0.2)
 
 
 def draft_review(state: CodeReviewState) -> Dict[str, Any]:
-    """Generate a draft code review with 3-6 points."""
+    """Generate a draft code review with 3-6 bullet points."""
     prompt = f"""
 You are an experienced Python reviewer. Provide a concise code review for the following function.
 The review should contain 3 to 6 bullet points highlighting strengths and areas for improvement.
@@ -76,7 +76,7 @@ JSON:
             "weakest_criterion": data.get("weakest_criterion", ""),
             "verdict": data.get("verdict", "needs_revision"),
         }
-    except Exception as e:
+    except Exception:
         # Fallback in case of parsing error
         return {
             "criteria_scores": {"pep8": 0, "type_hints": 0, "edge_cases": 0, "naming": 0},
@@ -98,7 +98,9 @@ Keep the overall structure (bullet points) and ensure clarity.
 Revised Review:
 """
     response = llm.invoke([HumanMessage(content=prompt)])
-    return {"draft_review": response.content.strip()}
+    # Increment round
+    new_round = state["round"] + 1
+    return {"draft_review": response.content.strip(), "round": new_round}
 
 
 def build_graph() -> StateGraph[CodeReviewState]:
