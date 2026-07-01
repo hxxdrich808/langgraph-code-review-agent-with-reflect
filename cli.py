@@ -1,11 +1,6 @@
 import argparse
-import os
 from graph import build_graph
 from state import CodeReviewState
-
-def load_code_from_file(path: str) -> str:
-    with open(path, "r") as f:
-        return f.read()
 
 def main():
     parser = argparse.ArgumentParser(description="Code Review Agent Demo")
@@ -17,7 +12,8 @@ def main():
     args = parser.parse_args()
 
     if args.file:
-        code = load_code_from_file(args.file)
+        with open(args.file, "r") as f:
+            code = f.read()
     else:
         code = args.code
 

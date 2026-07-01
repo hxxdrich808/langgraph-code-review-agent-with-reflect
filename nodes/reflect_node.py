@@ -32,7 +32,7 @@ Return a JSON object with keys:
 "edge_cases": int,
 "naming": int,
 "weakest_criterion": string (the criterion name with the lowest score),
-"verdict": "ok" if all scores >= 7 else "needs_revision"."""
+"verdict": "ok" if all scores >= 8 else "needs_revision"."""
     response = llm.invoke(prompt)
     try:
         data = json.loads(response.content.strip())
