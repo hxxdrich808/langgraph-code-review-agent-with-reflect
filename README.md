@@ -3,7 +3,7 @@
 ## Requirements
 - Python 3.10+
 - `langgraph` (latest)
-- `langchain-openai` or `langchain-ollama`
+- `langchain-openai`
 - `python-dotenv`
 
 Install dependencies:
