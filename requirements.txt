@@ -2,7 +2,6 @@ langchain
 langchain-chroma
 langchain-openai
 langchain-tavily
-langchain-ollama
 tavily-python
 chromadb
 python-dotenv
