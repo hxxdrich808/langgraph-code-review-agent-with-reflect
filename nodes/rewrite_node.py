@@ -9,7 +9,6 @@ def rewrite(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Rewrite the section of the draft review that corresponds to the weakest criterion.
     """
-    # Identify the line(s) in the draft_review that mention the weakest criterion
     weak = state["weakest_criterion"]
     lines = state["draft_review"].splitlines()
     new_lines = []

@@ -8,6 +8,13 @@ llm = ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"))
 def reflect(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Critique the draft review and produce structured JSON with scores.
+    The JSON must contain keys:
+        - pep8
+        - type_hints
+        - edge_cases
+        - naming
+        - weakest_criterion (string)
+        - verdict ("ok" or "needs_revision")
     """
     prompt = f"""You are a code quality critic. Evaluate the following code review:
 
@@ -20,8 +27,10 @@ Score each of the four criteria on a scale 0-10:
 - Naming conventions
 
 Return a JSON object with keys:
-"criteria_scores": {{"PEP8 compliance": int, "Type hints presence and correctness": int,
-"Edge case handling": int, "Naming conventions": int}},
+"pep8": int,
+"type_hints": int,
+"edge_cases": int,
+"naming": int,
 "weakest_criterion": string (the criterion name with the lowest score),
 "verdict": "ok" if all scores >= 7 else "needs_revision"."""
     response = llm.invoke(prompt)
@@ -31,11 +40,17 @@ Return a JSON object with keys:
         raise ValueError(f"Invalid JSON from LLM: {response.content}") from e
 
     # Validate keys
-    required_keys = {"criteria_scores", "weakest_criterion", "verdict"}
+    required_keys = {"pep8", "type_hints", "edge_cases", "naming",
+                     "weakest_criterion", "verdict"}
     if not required_keys.issubset(data):
         raise ValueError("Missing keys in reflect output")
 
-    state["criteria_scores"] = data["criteria_scores"]
+    state["criteria_scores"] = {
+        "pep8": data["pep8"],
+        "type_hints": data["type_hints"],
+        "edge_cases": data["edge_cases"],
+        "naming": data["naming"]
+    }
     state["weakest_criterion"] = data["weakest_criterion"]
     state["verdict"] = data["verdict"]
     return state

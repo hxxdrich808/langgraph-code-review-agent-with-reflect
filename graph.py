@@ -6,6 +6,7 @@ from state import CodeReviewState
 def build_graph() -> StateGraph:
     """
     Build the LangGraph workflow for code review with reflection.
+    Returns a compiled graph ready to invoke.
     """
     graph = StateGraph(CodeReviewState)
 
@@ -15,7 +16,7 @@ def build_graph() -> StateGraph:
     graph.add_node("rewrite", rewrite)
 
     # Define transitions
-    def should_rewrite(state: Dict[str, Any]):
+    def should_rewrite(state: Dict[str, Any]) -> bool:
         return state["verdict"] == "needs_revision" and state["round"] < state["max_rounds"]
 
     graph.set_entry_point("draft")
@@ -26,4 +27,5 @@ def build_graph() -> StateGraph:
     )
     graph.add_edge("rewrite", "reflect")
 
-    return graph
+    # Compile the graph to get an invokable object
+    return graph.compile()
