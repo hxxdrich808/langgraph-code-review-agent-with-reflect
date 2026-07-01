@@ -1,0 +1,9 @@
+langchain
+langchain-chroma
+langchain-tavily
+langchain-ollama
+tavily-python
+chromadb
+python-dotenv
+pydantic
+tqdm
