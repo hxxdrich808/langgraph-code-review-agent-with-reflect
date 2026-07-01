@@ -1,11 +1,13 @@
 from langgraph import StateGraph
 from state import CodeReviewState
 from langchain_openai import ChatOpenAI
-import os
 
 llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 
 def draft_review(state: CodeReviewState) -> dict:
+    """
+    Generate an initial review of 3–6 concise points.
+    """
     code = state["code"]
     prompt = f"""
 You are a senior software engineer reviewing the following Python function.
@@ -19,6 +21,9 @@ Provide an initial review consisting of 3 to 6 concise points. Do not include an
     response = llm.invoke(prompt)
     return {"draft_review": response.content.strip()}
 
+def register(graph: StateGraph):
+    graph.add_node("draft_review", draft_review)
+
 
 from langgraph import StateGraph
 from state import CodeReviewState
@@ -27,7 +32,11 @@ import json
 
 llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 
-def reflect(state: CodeReviewState) -> dict:
+def critic(state: CodeReviewState) -> dict:
+    """
+    Score the draft review on four criteria (0–10).
+    Determine weakest criterion and verdict.
+    """
     draft_review = state["draft_review"]
     prompt = f"""
 You are a senior software engineer reviewing the following draft review.
@@ -35,7 +44,7 @@ You are a senior software engineer reviewing the following draft review.
 Draft Review:
 {draft_review}
 
-Score this draft on four criteria (1-5, 5 being best):
+Score this draft on four criteria (0-10, 10 being best):
 1. PEP8 compliance
 2. Type hints presence and correctness
 3. Edge case handling
@@ -44,7 +53,7 @@ Score this draft on four criteria (1-5, 5 being best):
 Return a JSON object with keys:
 - "criteria_scores": dict mapping criterion name to score
 - "weakest_criterion": the criterion with lowest score
-- "verdict": "ok" if all scores >=4, otherwise "needs_revision"
+- "verdict": "ok" if all scores >=8, otherwise "needs_revision"
 
 Example output:
 {{
@@ -69,6 +78,9 @@ Example output:
         "verdict": data["verdict"]
     }
 
+def register(graph: StateGraph):
+    graph.add_node("critic", critic)
+
 
 from langgraph import StateGraph
 from state import CodeReviewState
@@ -78,14 +90,18 @@ import re
 llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 
 def rewrite(state: CodeReviewState) -> dict:
+    """
+    Rewrite only the section of draft_review corresponding to weakest_criterion.
+    Increment round counter.
+    """
     code = state["code"]
     draft_review = state["draft_review"]
     weakest = state["weakest_criterion"]
 
-    # Extract the problematic section from the draft review
+    # Find the line(s) that mention the weakest criterion
     pattern = re.compile(rf"(?i){re.escape(weakest)}.*?(?=\n\n|$)", re.DOTALL)
     match = pattern.search(draft_review)
-    issue_section = match.group(0) if match else ""
+    issue_section = match.group(0).strip() if match else ""
 
     prompt = f"""
 You are a senior software engineer. The following Python function has an identified weak area:
@@ -102,7 +118,7 @@ Rewrite only that part of the review to improve it, keeping the rest of the draf
     response = llm.invoke(prompt)
     new_review = response.content.strip()
 
-    # Replace the old section with the new one
+    # Replace old section with new one
     if match:
         updated_review = draft_review.replace(issue_section, new_review)
     else:
@@ -113,44 +129,51 @@ Rewrite only that part of the review to improve it, keeping the rest of the draf
         "round": state["round"] + 1
     }
 
+def register(graph: StateGraph):
+    graph.add_node("rewrite", rewrite)
 
-from langgraph import StateGraph
+
+from langgraph import StateGraph, END
 from state import CodeReviewState
-from nodes.draft_review_node import draft_review
-from nodes.reflect_node import reflect
-from nodes.rewrite_node import rewrite
+from nodes.draft_review_node import register as draft_register
+from nodes.critic_node import register as critic_register
+from nodes.rewrite_node import register as rewrite_register
 
 def build_graph() -> StateGraph:
+    """
+    Build a LangGraph that performs:
+    draft_review → critic → (optional) rewrite → critic … until verdict == 'ok' or max rounds reached.
+    """
     workflow = StateGraph(CodeReviewState)
 
-    # Nodes
-    workflow.add_node("draft_review", draft_review)
-    workflow.add_node("reflect", reflect)
-    workflow.add_node("rewrite", rewrite)
+    # Register nodes
+    draft_register(workflow)
+    critic_register(workflow)
+    rewrite_register(workflow)
 
     # Entry point
     workflow.set_entry_point("draft_review")
 
-    # Transitions
+    # Conditional transition after critic
     def decide(state: CodeReviewState):
         if state["verdict"] == "ok":
-            return "end"
+            return END
         elif state["round"] < state.get("max_rounds", 2):
             return "rewrite"
         else:
-            return "end"
+            return END
 
     workflow.add_conditional_edges(
-        ["reflect"],
+        ["critic"],
         decide,
         {
             "rewrite": "rewrite",
-            "end": "end"
+            END: END
         }
     )
 
-    # After rewrite, go back to reflect
-    workflow.add_edge("rewrite", "reflect")
+    # After rewrite, go back to critic
+    workflow.add_edge("rewrite", "critic")
 
     return workflow
 
@@ -158,6 +181,7 @@ def build_graph() -> StateGraph:
 import argparse
 from graph import build_graph
 from state import CodeReviewState
+import os
 
 def main():
     parser = argparse.ArgumentParser(description="LangGraph Code Review Agent")
@@ -184,10 +208,10 @@ def main():
     print("\n=== Draft Review ===")
     print(final_state["draft_review"])
     print("\n=== Criteria Scores ===")
-    for crit, score in final_state["criteria_scores"].items():
+    for crit, score in final_state.get("criteria_scores", {}).items():
         print(f"{crit}: {score}")
-    print(f"\nWeakest Criterion: {final_state['weakest_criterion']}")
-    print(f"Verdict: {final_state['verdict']}")
+    print(f"\nWeakest Criterion: {final_state.get('weakest_criterion', '')}")
+    print(f"Verdict: {final_state.get('verdict', '')}")
 
 if __name__ == "__main__":
     main()
