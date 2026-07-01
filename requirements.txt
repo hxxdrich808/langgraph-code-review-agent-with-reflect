@@ -7,3 +7,4 @@ chromadb
 python-dotenv
 pydantic
 tqdm
+langgraph==0.1.2
