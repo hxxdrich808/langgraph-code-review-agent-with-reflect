@@ -122,4 +122,4 @@ code_review_agent/
 
 ## Ограничения
 
-- Для реального запуска нужен доступ к OpenAI API (ключ `OPENAI_API_KEY`).
+- Для реального запуска нужен доступ к OpenAI API (ключ `OPENAI_API_KEY`). 
