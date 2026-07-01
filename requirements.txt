@@ -1,4 +1,5 @@
 langchain
+langchain-core
 langgraph==0.1.4
 langchain-openai==0.2.3
 python-dotenv==1.0.1
