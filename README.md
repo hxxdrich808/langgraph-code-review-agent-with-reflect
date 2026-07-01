@@ -43,6 +43,14 @@ class CodeReviewState(TypedDict):
 
 `verdict = "ok"`, если все 4 критерия ≥ 7 (порог задаётся `OK_THRESHOLD` в `agent.py`).
 
+## Стек
+
+- Python 3.10+
+- `langgraph` — граф с циклом рефлексии
+- `langchain-openai` / `langchain-ollama` — LLM-провайдеры
+- `pydantic` — structured output критика
+- `rich` — форматированный CLI-вывод (подсветка кода, панели, таблица баллов)
+
 ## Установка
 
 ```bash
@@ -71,13 +79,18 @@ python demo.py --max-rounds 3
 
 Демо использует `graph.stream(state, stream_mode="updates")`, поэтому в
 консоль последовательно выводится:
-1. исходный код;
-2. первичный `DRAFT REVIEW`;
-3. результат `REFLECT` — баллы по 4 критериям, `weakest_criterion`, `verdict`;
-4. если `needs_revision` — блок `REWRITE` с переписанным ревью и новым раундом,
+1. исходный код (подсветка синтаксиса через `rich.syntax.Syntax`);
+2. первичный `DRAFT REVIEW` (панель `rich.panel.Panel` с рендером Markdown);
+3. результат `REFLECT` — таблица `rich.table.Table` с баллами по 4 критериям
+   (цвет ячейки: зелёный ≥7 / жёлтый 4–6 / красный <4), пометка `weakest_criterion`
+   и цветной `verdict`;
+4. если `needs_revision` — панель `REWRITE` с переписанным ревью и новым раундом,
    затем повторный `REFLECT` с обновлёнными баллами;
 5. шаги 3–4 повторяются, пока `verdict != "ok"` и `round < max_rounds`;
 6. финальная сводка (число раундов, итоговый вердикт, итоговые баллы, финальный текст ревью).
+
+Вывод целиком оформлен через библиотеку [`rich`](https://github.com/Textualize/rich)
+(`Console`, `Panel`, `Table`, `Syntax`, `Markdown`, `Rule`, `Text`) — см. `demo.py`.
 
 ### Пример кода из демо по умолчанию
 
