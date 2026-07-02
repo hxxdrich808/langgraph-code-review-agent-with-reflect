@@ -1,42 +1,38 @@
-#!/usr/bin/env python3
 """
-Demo CLI for LangGraph Code Review Agent with Reflection.
-Usage:
-    python demo.py <path_to_python_file>
+Demo of the LangGraph code review agent.
 """
 
-import argparse
-from pathlib import Path
+from __future__ import annotations
+
+import textwrap
 
 from agent import run_code_review
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="LangGraph Code Review Demo")
-    parser.add_argument(
-        "file",
-        type=Path,
-        help="Path to the Python file containing the function to review.",
-    )
-    args = parser.parse_args()
-
-    if not args.file.is_file():
-        raise FileNotFoundError(f"File {args.file} does not exist.")
-
-    code_text = args.file.read_text(encoding="utf-8")
-
-    print("\n=== Running Code Review ===\n")
-    final_state = run_code_review(code_text)
-
-    print("\n=== Final State ===")
-    print(f"Verdict: {final_state['verdict']}")
-    print(f"Weakest Criterion: {final_state['weakest_criterion']}")
-    print("Criteria Scores:")
-    for k, v in final_state["criteria_scores"].items():
-        print(f"  {k}: {v}")
-    print("\nFinal Draft Review:\n")
-    print(final_state["draft_review"])
+def sort_numbers(numbers):
+    """Sort a list of numbers in ascending order."""
+    # Using built-in sorted for simplicity
+    return sorted(numbers)
 
 
 if __name__ == "__main__":
-    main()
+    sample_code = textwrap.dedent(
+        """
+        def sort_numbers(numbers):
+            \"\"\"Sort a list of numbers in ascending order.\"\"\"
+            # Using built-in sorted for simplicity
+            return sorted(numbers)
+        """
+    )
+
+    print("\n=== Running code review demo ===\n")
+    result = run_code_review(sample_code, max_rounds=2)
+
+    print("\n--- Final Review ---")
+    print(result["draft_review"])
+    print("\n--- Scores ---")
+    for k, v in result["criteria_scores"].items():
+        print(f"{k}: {v}")
+    print(f"\nVerdict: {result['verdict']}")
+    print(f"Weakest criterion: {result['weakest_criterion']}")
+    print(f"Rounds performed: {result['round']}")
