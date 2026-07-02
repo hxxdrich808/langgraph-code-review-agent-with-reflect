@@ -16,7 +16,6 @@ from typing import TypedDict, Dict
 
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import create_react_agent
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -31,7 +30,7 @@ console = Console()
 
 class CodeReviewState(TypedDict):
     code: str
-    draft_review: str | None
+    draft_review: str
     criteria_scores: Dict[str, int]  # {"pep8": 0-10, ...}
     weakest_criterion: str | None
     verdict: str  # "ok" | "needs_revision"
@@ -148,11 +147,22 @@ def build_graph() -> StateGraph[CodeReviewState]:
 
 # ---------- Rich output helpers ----------
 def display_initial(state: CodeReviewState):
-    console.print(Panel(Markdown(f"### Original Function\n```python\n{state['code']}\n```"), title="Original Code"))
+    console.print(
+        Panel(
+            Markdown(f"### Original Function\n```python\n{state['code']}\n```"),
+            title="Original Code",
+        )
+    )
+
 
 def display_draft(state: CodeReviewState, round_num: int):
-    console.print(Panel(Markdown(f"**Round {round_num} Draft Review**\n{state['draft_review']}"),
-                       title=f"Draft Review (Round {round_num})"))
+    console.print(
+        Panel(
+            Markdown(f"**Round {round_num} Draft Review**\n{state['draft_review']}"),
+            title=f"Draft Review (Round {round_num})",
+        )
+    )
+
 
 def display_scores(state: CodeReviewState):
     table = Table(title="Reflection Scores")
@@ -163,9 +173,14 @@ def display_scores(state: CodeReviewState):
         table.add_row(crit.replace("_", " ").title(), str(score), style=style)
     console.print(table)
 
+
 def display_final(state: CodeReviewState):
     verdict = state["verdict"]
-    title = f"[green]Final Verdict: {verdict.upper()}[/green]" if verdict == "ok" else f"[red]Final Verdict: {verdict.upper()}[/red]"
+    title = (
+        f"[green]Final Verdict: {verdict.upper()}[/green]"
+        if verdict == "ok"
+        else f"[red]Final Verdict: {verdict.upper()}[/red]"
+    )
     console.print(Panel(Markdown(f"{state['draft_review']}"), title=title))
 
 
@@ -190,7 +205,7 @@ def main():
 
     init_state: CodeReviewState = {
         "code": code_snippet.strip(),
-        "draft_review": None,
+        "draft_review": "",
         "criteria_scores": {},
         "weakest_criterion": None,
         "verdict": "",
@@ -226,6 +241,7 @@ def main():
             break
         else:
             state["round"] += 1
+
 
 if __name__ == "__main__":
     main()
