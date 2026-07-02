@@ -130,14 +130,14 @@ def build_graph() -> StateGraph[CodeReviewState]:
     graph.set_entry_point("draft")
     graph.add_conditional_edges(
         "draft",
-        lambda x: "reflect",
+        lambda x: ("reflect",),
     )
     graph.add_conditional_edges(
         "reflect",
         lambda x: (
-            "rewrite"
+            ("rewrite",)
             if x["verdict"] == "needs_revision" and x["round"] < x["max_rounds"]
-            else END
+            else (END,)
         ),
     )
     graph.add_edge("rewrite", "reflect")
