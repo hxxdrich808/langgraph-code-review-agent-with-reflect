@@ -1,62 +1,56 @@
 """
-Demo script for LangGraph Code Review Agent.
+Command‑line demo for the LangGraph code review agent.
 """
 
-from __future__ import annotations
-
 import argparse
-from textwrap import dedent
+import textwrap
+from pathlib import Path
 
-from agent import run_code_review, rprint
+from agent import run_code_review
 
 
-def sample_sort_numbers() -> str:
-    """
-    Sample function to demonstrate the code review agent.
-    Returns the source code as a string.
-    """
-    return dedent(
-        """\
-        def sort_numbers(numbers: list[int]) -> list[int]:
-            \"\"\"Sorts a list of numbers in ascending order.\"\"\"
-            # Using built-in sorted for simplicity
-            return sorted(numbers)
-        """
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run a code review with reflection on a Python function."
     )
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="LangGraph Code Review Agent Demo")
     parser.add_argument(
-        "--code",
-        type=str,
-        help="Path to a Python file containing the code to review. If omitted, a sample function is used.",
+        "file",
+        nargs="?",
+        type=Path,
+        default=None,
+        help="Path to a .py file containing the function. If omitted, stdin is used.",
     )
     parser.add_argument(
         "--max-rounds",
         type=int,
-        default=2,
-        help="Maximum number of rewrite rounds (default: 2)",
+        default=None,
+        help="Maximum number of rewrite rounds (default: 2).",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    if args.code:
-        with open(args.code, "r", encoding="utf-8") as f:
-            code_str = f.read()
-    else:
-        code_str = sample_sort_numbers()
 
-    rprint("[bold underline]Running Code Review Agent...[/]")
-    final_state = run_code_review(code_str, max_rounds=args.max_rounds)
+def read_code(path: Path | None) -> str:
+    if path:
+        return path.read_text(encoding="utf-8")
+    # Read from stdin
+    print("Enter Python code (end with EOF):")
+    return "".join(textwrap.dedent(line) for line in iter(input, ""))
 
-    rprint("\n[bold green]Final State:[/]")
-    rprint(f"Verdict: {final_state['verdict']}")
-    rprint(f"Round: {final_state['round']} / {final_state['max_rounds']}")
-    rprint("Scores:")
+
+def main() -> None:
+    args = parse_args()
+    code = read_code(args.file)
+
+    final_state = run_code_review(code, max_rounds=args.max_rounds)
+
+    print("\n=== Final Review ===")
+    print(final_state["draft_review"])
+    print("\n=== Scores ===")
     for k, v in final_state["criteria_scores"].items():
-        rprint(f"  {k}: {v}")
-
-    rprint("\n[bold cyan]Final Review:[/]\n" + final_state["draft_review"])
+        print(f"  {k}: {v}")
+    print(f"\nWeakest criterion: {final_state['weakest_criterion']}")
+    print(f"Verdict: {final_state['verdict']}")
+    print(f"Rounds performed: {final_state['round']} / {final_state['max_rounds']}")
 
 
 if __name__ == "__main__":
