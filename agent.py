@@ -233,7 +233,7 @@ def build_graph() -> StateGraph[CodeReviewState]:
 # Публичный API
 # ---------------------------------------------------------------------------
 
-def run_code_review(code: str, max_rounds: int | None = None) -> dict:
+def run_code_review(code: str, max_rounds: int | None = None) -> CodeReviewState:
     """Run the code review graph and return final state."""
     if max_rounds is None:
         max_rounds = 2
