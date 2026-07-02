@@ -1,6 +1,7 @@
 langgraph
 langchain-openai
+langchain-core
 python-dotenv
 rich
 pydantic
-langchain-core
+
