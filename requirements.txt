@@ -2,4 +2,3 @@ langgraph
 langchain-openai
 python-dotenv
 rich
-pydantic
