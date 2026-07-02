@@ -44,6 +44,7 @@ llm = ChatOpenAI(
     model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
 )
 
+
 # ---------- Node definitions ----------
 def draft_review_node(state: CodeReviewState) -> Dict:
     """Generate an initial review of the code."""
@@ -114,7 +115,9 @@ Provide the revised review text only.
 """
     response = llm.invoke(prompt)
     state["draft_review"] = response.content.strip()
-    return {"draft_review": state["draft_review"]}
+    # Increment round counter
+    state["round"] += 1
+    return {"draft_review": state["draft_review"], "round": state["round"]}
 
 
 # ---------- Graph construction ----------
@@ -128,18 +131,15 @@ def build_graph() -> StateGraph[CodeReviewState]:
 
     # Define transitions
     graph.set_entry_point("draft")
-    graph.add_conditional_edges(
-        "draft",
-        lambda x: ("reflect",),
-    )
-    graph.add_conditional_edges(
-        "reflect",
-        lambda x: (
-            ("rewrite",)
-            if x["verdict"] == "needs_revision" and x["round"] < x["max_rounds"]
-            else (END,)
-        ),
-    )
+    graph.add_edge("draft", "reflect")
+
+    def decide_next(state: CodeReviewState):
+        if state["verdict"] == "needs_revision" and state["round"] < state["max_rounds"]:
+            return ["rewrite"]
+        else:
+            return [END]
+
+    graph.add_conditional_edges("reflect", decide_next)
     graph.add_edge("rewrite", "reflect")
 
     return graph
@@ -240,7 +240,8 @@ def main():
             display_final(state)
             break
         else:
-            state["round"] += 1
+            # next iteration will be handled by graph loop
+            pass
 
 
 if __name__ == "__main__":
